@@ -10,9 +10,9 @@ public:
 	VlcEncodingSystem(QObject *parent = 0);
 
 public slots:
-	void	OnChange(const QString &paramFile);
+	void	OnChange(const QString &arg);
 
 protected:
-	static QString	_ServerId();
+	void	_DoEncode(const QString &paramFile);
 };
 #endif	// _VlcEncodingSystem_h

@@ -9,18 +9,29 @@ void VlcEncoder::run()
 
 	QProcess	encoder;
 
-	encoder.setWorkingDirectory(info.completeBaseName());
-	encoder.setStandardErrorFile("errVLC.log");
-	encoder.setStandardOutputFile("logVLC.log");
-	qDebug() << "Trying to start " << _scriptFilename;
-	encoder.start(_scriptFilename);
+	//encoder.setWorkingDirectory("\"" + info.path() + "\"");
+	encoder.setStandardErrorFile(info.path() + "/errVLC.log");
+	encoder.setStandardOutputFile(info.path() + "/logVLC.log");
 
-	encoder.waitForFinished(-1);
+	QString cmd = "\"" + info.filePath() + "\"";
+	//qDebug() << "Trying to start " << cmd;
+	encoder.start(cmd, QIODevice::ReadOnly);
 
-	qDebug() << "Script is done " << QString::number(encoder.exitCode());
+	if(encoder.waitForStarted() == false) {
+		qDebug() << "encoder starting problem " << QString::number(encoder.exitCode()) << QString::number(encoder.exitStatus()) << QString::number(encoder.error());
+		return;
+	}
+
+	if(encoder.waitForFinished(-1) == false) {
+		qDebug() << "encoder finishing problem " << QString::number(encoder.exitCode()) << QString::number(encoder.exitStatus()) << QString::number(encoder.error());
+	}
+
+	//qDebug() << "Script is done " << QString::number(encoder.exitCode()) << QString::number(encoder.exitStatus()) << QString::number(encoder.error());
 
 	// Log result
-	if(encoder.error() == 0) {
+
+	// Mark complete
+	if(encoder.exitCode() == 0) {
 		QFile	complete(info.path() + "/complete.txt");
 		if(complete.open(QIODevice::WriteOnly)) {
 			complete.close();

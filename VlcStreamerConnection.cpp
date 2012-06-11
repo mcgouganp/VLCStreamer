@@ -2,6 +2,8 @@
 #include <QDateTime>
 #include <QFile>
 #include <qjson/parser.h>
+#include <stdlib.h>
+#include "VlcStreamerApp.h"
 
 //static const QString _RootDirectory = ".Hobbyist_Software/VLC_Streamer/Root";
 //static const QString _RootDirectory = "Root";
@@ -39,7 +41,7 @@ void VlcStreamerConnection::_RecvData()
 {
 	QByteArray	data;
 
-	qDebug("VlcStreamerConnection %p: data received", this);
+	//qDebug("VlcStreamerConnection %p: data received", this);
 
 	while(canReadLine()) {
 		data = readLine();
@@ -80,7 +82,20 @@ void VlcStreamerConnection::_DeleteDirectory(QDir &dir)
 	}
 	QString current = dir.dirName();
 	dir.cdUp();
-	dir.remove(current);
+	dir.rmdir(current);
+}
+
+
+QString VlcStreamerConnection::_ServerId()
+{
+	static const QString src = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+
+	QString	rtn;
+
+	for(unsigned i = 0; i != 8; ++i) {
+		rtn += src[(int) (random() % src.size())];
+	}
+	return rtn;
 }
 
 
@@ -89,7 +104,7 @@ void VlcStreamerConnection::_Respond()
 	static const QByteArray	Command = "/secure?";
 	_Response	response;
 
-	qDebug() << _request.Path();
+	//qDebug() << _request.Path();
 	if(_request.Path().startsWith(Command)) {
 
 		QList<QByteArray>	temp = _request.Path().mid(Command.size()).split('&');
@@ -102,7 +117,7 @@ void VlcStreamerConnection::_Respond()
 				value = QByteArray::fromPercentEncoding(temp0.at(1));
 			}
 			map.insert(name, value);
-			qDebug() << name << " => " << value;
+			//qDebug() << name << " => " << value;
 		}
 		QByteArray	data;
 		if(map.contains("command")) {
@@ -122,7 +137,8 @@ void VlcStreamerConnection::_Respond()
 				response.Data(data);
 			} else if(command == "create") {
 				QDir	dir(_documentRoot);
-				QFile	params(dir.path() + "/_Queue/" + map.value("file") + ".params.txt");
+				QFileInfo	src(map.value("file"));
+				QFile	params(dir.path() + "/_Queue/" + src.fileName() + ".params.txt");
 				if(params.open(QIODevice::WriteOnly)) {
 					data = "{";
 					QMapIterator<QByteArray, QByteArray>	iter(map);
@@ -130,36 +146,42 @@ void VlcStreamerConnection::_Respond()
 						QByteArray	name, value;
 						name = iter.peekNext().key();
 						value = iter.next().value();
-						data += "\"" + name.replace("\"", "\\\"") + "\":\"" + value.replace("\"", "\\\"");
-						if(iter.hasNext()) {
-							data += ",";
-						}
+						data += "\"" + name.replace("\"", "\\\"") + "\":\"" + value.replace("\"", "\\\"") + "\",";
 					}
-					data += QByteArray("\"serverid\":\"") + "12341234" + "\"";
+					data += QByteArray("\"serverid\":\"") + _ServerId().toAscii() + "\"";
 					data += "}";
 					params.write(data);
 					params.close();
+				} else {
+					qDebug() << "Couldn't open params file for writing" << params.fileName();
 				}
 				response.Data("Encoding");
 
-			} else if(command == "getpath") {
-				data = "{\"root\":" + QDir::homePath().toAscii() + "/Videos\"}";
-				response.Data(data);
-			} else if(command == "browse") {
-				QDir	dir(map.value("dir"));
+			} else if(command == "getpath" || command == "browse") {
+				QString	path;
+				if(command == "getpath") {
+					if(map.value("dir") == "...drives...") {
+						path = VlcStreamerApp::Instance()->DrivesDir();
+					} else {
+						path = VlcStreamerApp::Instance()->HomeDir();
+					}
+				} else {
+					path = map.value("dir");
+				}
+				QDir	dir(path);
 				QFileInfoList	list = dir.entryInfoList(QDir::Dirs | QDir::Files | QDir::Readable | QDir::NoDotAndDotDot);
 				data = "{";
+				data += "\"files\":[";
 				if(list.isEmpty() == false) {
-					data += "\"files\":[";
 					for(unsigned i = 0; i != (unsigned) list.size(); ++i) {
 						if(i) {
 							data += ",";
 						}
 						data += "{\"name\":\"" + list.at(i).fileName() + "\",\"path\":\"" + list.at(i).filePath() + "\",\"type\":\"" + (list.at(i).isDir() ? "dir" : "file") + "\"}";
 					}
-					data += "],";
 				}
-				data += "\"root\":\"" + map.value("dir") + "\"}";
+				data += "],";
+				data += "\"root\":\"" + path + "\"}";
 				response.Data(data);
 			} else if(command == "delete") {
 				QVector<_VideoInfo>	info;
@@ -171,9 +193,10 @@ void VlcStreamerConnection::_Respond()
 					QJson::Parser	parser;
 					QVariantMap		result = parser.parse(info[i].params, &ok).toMap();
 					if(ok) {
-						qDebug() << "ServerId is [" << result["serverid"].toString() << "]";
+						//qDebug() << "ServerId is [" << result["serverid"].toString() << "]";
 						if(result["serverid"].toByteArray() == map.value("id")) {
-							QDir	dir(result["file"].toString());
+							QDir	dir(_documentRoot + "/" + info[i].name);
+							//qDebug() << "Found matching serverId, deleting directory " << dir.path();	
 							_DeleteDirectory(dir);
 							break;
 						}
@@ -197,7 +220,7 @@ void VlcStreamerConnection::_Respond()
 		}
 	} else {
 		QByteArray	filename;
-		filename = _documentRoot.toAscii() + _request.Path();
+		filename = _documentRoot.toAscii() + QByteArray::fromPercentEncoding(_request.Path());
 		QFile		file(filename);
 		if(file.exists()) {
 			if(file.open(QIODevice::ReadOnly)) {
@@ -213,7 +236,7 @@ void VlcStreamerConnection::_Respond()
 	}
 	QByteArray ug;
 	write(ug = response.ToByteArray());
-	qDebug() << ug;
+	//qDebug() << ug;
 	if(_request.Value("Connection") == "close") {
 		disconnectFromHost();
 	}
@@ -233,16 +256,15 @@ QVector<VlcStreamerConnection::_VideoInfo>	VlcStreamerConnection::_GetConvertedV
 				_VideoInfo	info;
 				info.name = list.at(i).toAscii();
 				info.params = params.readAll();
+				info.status = "not processed";
 				if(QFile::exists(dir.path() + "/complete.txt")) {
 					info.status = "complete";
-				} else {
-					QStringList	filter;
-					filter += "stream*.ts";
-					QStringList	segments = dir.entryList(filter, QDir::Files | QDir::Readable);
-					if(segments.size()) {
-						info.status = "segments-" + QByteArray::number(segments.size());
-					} else {
-						info.status = "not processed";
+				} else if(QFile::exists(dir.path() + "/stream.m3u8")) {
+					QFile	index(dir.path() + "/stream.m3u8");
+					if(index.open(QIODevice::ReadOnly)) {
+						QByteArray data = index.readAll();
+						index.close();
+						info.status = "segments-" + QByteArray::number(data.count("stream-"));
 					}
 				}
 				params.close();
@@ -293,6 +315,7 @@ bool VlcStreamerConnection::_Request::AddLine(const QByteArray &line)
 
 
 // ----------------------------------------------------------
+
 
 VlcStreamerConnection::_Response::_Response()
 {

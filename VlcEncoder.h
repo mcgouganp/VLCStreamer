@@ -3,6 +3,7 @@
 
 #include <QRunnable>
 #include <QString>
+#include <QProcess>
 
 class VlcEncoder : public QRunnable {
 public:

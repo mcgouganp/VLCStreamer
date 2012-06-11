@@ -63,7 +63,8 @@ private:
 		QByteArray	status;
 	};
 
-	static void	_DeleteDirectory(QDir &name);
+	static void		_DeleteDirectory(QDir &name);
+	static QString	_ServerId();
 
 	void	_Respond();
 	
