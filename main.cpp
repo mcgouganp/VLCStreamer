@@ -1,4 +1,3 @@
-#include <iostream>
 #include <QCoreApplication>
 #include <QSocketNotifier>
 #include <sys/socket.h>
@@ -7,16 +6,16 @@
 #include "VlcStreamerApp.h"
 
 
-static const QString	_AppName	= "VlcStreamer";
-static const QString	_Org		= "gallandro.net";
-
 static int	_sigFd[2];
 
 
-void _Handler(int sig)
+void _Handler(int /*sig*/)
 {
 	char	a;
-	::write(_sigFd[0], &(a = 1), sizeof(a));
+	
+	if(::write(_sigFd[0], &(a = 1), sizeof(a)) != sizeof(a)) {
+		_exit(1);
+	}
 }
 
 
@@ -28,11 +27,6 @@ int main(int argc, char **argv)
 	
 	QCoreApplication	app(argc, argv);
 
-	app.setApplicationName(_AppName);
-	app.setOrganizationName(_Org);
-
-	std::cerr << "PID: " << app.applicationPid() << std::endl;
-	
 	socketpair(AF_UNIX, SOCK_STREAM, 0, _sigFd);
 	snSignal = new QSocketNotifier(_sigFd[1], QSocketNotifier::Read);
 	QObject::connect(snSignal, SIGNAL(activated(int)), &app, SLOT(quit()));
@@ -43,19 +37,17 @@ int main(int argc, char **argv)
 	sigaction(SIGINT, &act, &oact);
 	sigaction(SIGTERM, &act, 0);
 
-	std::cerr << "Starting" << std::endl;
-
 	VlcStreamerApp	streamer;
-	QObject::connect(&app, SIGNAL(aboutToQuit()), &streamer, SLOT(Stop()));
 
-	std::cerr << "Running exec" << std::endl;
-
-	rtn = app.exec();
+	if(streamer.Setup()) {
+		QObject::connect(&app, SIGNAL(aboutToQuit()), &streamer, SLOT(Stop()));
+		rtn = app.exec();
+	} else {
+		rtn = 1;
+	}
 
 	sigaction(SIGINT, &oact, 0);
 	sigaction(SIGTERM, &oact, 0);
-
-	std::cerr << "Exiting" << std::endl;
 
 	return rtn;
 }

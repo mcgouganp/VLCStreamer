@@ -1,38 +1,47 @@
 #include "VlcStreamerApp.h"
+#include <QCoreApplication>
 #include <QDir>
 #include <QHostInfo>
+#include <QSettings>
 #include "VlcEncodingSystem.h"
 
-static const QString	_listenPort	= "8124";
-
-//QString VlcStreamerApp::DocumentRoot
 
 VlcStreamerApp::VlcStreamerApp(QObject *parent) : QObject(parent)
 {
-	_instance = this;
-
-	///.Hobbyist_Software/VLC_Streamer/Root/_Queue
-	static const QString	OrgString = ".Hobbyist_Software";
-	static const QString	AppString = "VLC_Streamer";
 	static const QString	RootString = "Root";
 	static const QString	QueueString = "_Queue";
 
+	_instance = this;
+
+	QCoreApplication	*appInstance = QCoreApplication::instance();
+
+	unsigned		listenPort;
 	QStringList		args;
-	QString			temp;
+
+	appInstance->setOrganizationName(_Org);
+	appInstance->setOrganizationDomain(_Domain);
+	appInstance->setApplicationName(_AppName);
+	appInstance->setApplicationVersion("0.1");
+
+	QSettings	settings;
+
+	QStringList	ug = settings.allKeys();
+	qDebug() << ug;
+
+	_homeDir = settings.value("home", QDir::homePath() + "/Videos").toString();
+	_drivesDir = settings.value("drives", "/media").toString();
+	listenPort = settings.value("port", 8124).toUInt();
 
 	QDir	dir(QDir::home());
-	_documentRoot = dir.path();
-	_homeDir = QDir::homePath() + "/Videos";
-	_drivesDir = "/media";
 
-	if(dir.exists(OrgString) == false) {
-		dir.mkdir(OrgString);
+	if(dir.exists("." + appInstance->organizationName()) == false) {
+		dir.mkdir("." + appInstance->organizationName());
 	}
-	dir.cd(OrgString);
-	if(dir.exists(AppString) == false) {
-		dir.mkdir(AppString);
+	dir.cd("." + appInstance->organizationName());
+	if(dir.exists(appInstance->applicationName()) == false) {
+		dir.mkdir(appInstance->applicationName());
 	}
-	dir.cd(AppString);
+	dir.cd(appInstance->applicationName());
 	if(dir.exists(RootString) == false) {
 		dir.mkdir(RootString);
 	}
@@ -40,20 +49,25 @@ VlcStreamerApp::VlcStreamerApp(QObject *parent) : QObject(parent)
 	if(dir.exists(QueueString) == false) {
 		dir.mkdir(QueueString);
 	}
+	_documentRoot = dir.path();
+
 
 	new VlcEncodingSystem(this);
 
-	new VlcStreamerServer(_listenPort.toUInt(), this);
+	new VlcStreamerServer(listenPort, this);
 
 	_mdns = new QProcess(this);
 
-	temp = "http=";
-	temp += _listenPort;
-
-	args << "-s" << QHostInfo::localHostName() << "_hs-vlcstream._tcp" << _listenPort << temp << "version=2" << "minVersion=1" << "platform=unix";
-	qDebug() << "Before running MDNS";
+	args << "-s" << QHostInfo::localHostName() << "_hs-vlcstream._tcp" << QString::number(listenPort) << ("http=" + QString::number(listenPort)) << "version=2" << "minVersion=1" << "platform=unix";
+	qDebug() << "Starting MDNS";
 	_mdns->start("avahi-publish-service", args);
 	qDebug() << "MDNS is running on " << _mdns->pid();
+}
+
+
+bool VlcStreamerApp::Setup()
+{
+	return true;
 }
 
 
@@ -61,14 +75,17 @@ void VlcStreamerApp::Stop()
 {
 	qDebug() << "Terminating MDNS";
 	_mdns->terminate();
-	qDebug() << "MDNS State " << _mdns->state();
 	_mdns->waitForFinished();
-	qDebug() << "MDNS State " << _mdns->state();
 }
 
 
 // ------------------------------------------------------
 
 
+const QString	VlcStreamerApp::_AppName	= "VlcStreamer";
+const QString	VlcStreamerApp::_Org		= "Gallandro";
+const QString	VlcStreamerApp::_Domain		= "gallandro.net";
+
 VlcStreamerApp	*VlcStreamerApp::_instance = 0;
+
 
