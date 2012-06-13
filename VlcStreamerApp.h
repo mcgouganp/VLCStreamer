@@ -28,10 +28,11 @@ private:
 
 	static VlcStreamerApp	*_instance;
 
+	unsigned	_listenPort;
 	QString		_documentRoot;
+	QString		_queueDir;
 	QString		_homeDir;
 	QString		_drivesDir;
-	QString		_queueDir;
 	QProcess	*_mdns;
 };
 
