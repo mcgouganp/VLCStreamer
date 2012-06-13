@@ -4,6 +4,7 @@
 #include <QDir>
 #include <QTcpSocket>
 #include <QTimer>
+#include <QUrl>
 
 class VlcStreamerConnection : public QTcpSocket {
 	Q_OBJECT
@@ -25,14 +26,14 @@ private:
 		bool		AddLine(const QByteArray &line);
 		bool		IsComplete() const				{ return _complete; }
 		QByteArray	Method() const					{ return _method; }
-		QByteArray	Path() const					{ return _path; }
+		const QUrl	&Url() const					{ return _url; }
 		QByteArray	Version() const					{ return _version; }
 		QByteArray	Value(const QByteArray &name)	{ return _headers.value(name); }
 
 	private:
 		bool							_complete;
 		QByteArray						_method;
-		QByteArray						_path;
+		QUrl							_url;
 		QByteArray						_version;
 		QMap<QByteArray, QByteArray>	_headers;
 	};
@@ -72,8 +73,6 @@ private:
 
 	QTimer		_readTimer;
 	_Request	_request;
-
-	const QString		_documentRoot;
 };
 
 
