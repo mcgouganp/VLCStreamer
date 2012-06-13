@@ -6,26 +6,23 @@
 #include <QVariantMap>
 #include <qjson/parser.h>
 #include "VlcEncoder.h"
+#include "VlcStreamerApp.h"
 
 #include <QDebug>
+
 VlcEncodingSystem::VlcEncodingSystem(QObject *parent) : QObject(parent)
 {
 	QFileSystemWatcher	*watcher = new QFileSystemWatcher(this);
 
 	connect(watcher, SIGNAL(directoryChanged(const QString &)), SLOT(OnChange(const QString &)));
 
-	watcher->addPath(QDir::homePath() + "/.Hobbyist_Software/VLC_Streamer/Root/_Queue");
-
-	//qDebug() << watcher->directories();
+	watcher->addPath(VlcStreamerApp::Instance()->QueueDir());
 }
 
 
 
 void VlcEncodingSystem::OnChange(const QString &arg)
 {
-	//qDebug() << __FUNCTION__ << " Signal On Change has been emitted";
-	//qDebug() << "Altered dir is " << arg;
-
 	QDir	dir(arg);
 	QStringList	matchingFiles;
 	matchingFiles << "*.params.txt";
@@ -40,9 +37,7 @@ void VlcEncodingSystem::_DoEncode(const QString &paramFile)
 {
 	QFileInfo	videoFile(QFileInfo(QFileInfo(paramFile).completeBaseName()).completeBaseName());
 
-	//qDebug() << "Altered file is " << paramFile;
-
-	QDir		dir(QDir::homePath() + "/.Hobbyist_Software/VLC_Streamer/Root");
+	QDir		dir(VlcStreamerApp::Instance()->DocumentRoot());
 	QString		name;
 	if(dir.exists(videoFile.completeBaseName())) {
 		for(unsigned i = 1; i != ~0U; ++i) {
@@ -54,8 +49,6 @@ void VlcEncodingSystem::_DoEncode(const QString &paramFile)
 	} else {
 		name = videoFile.completeBaseName();
 	}
-
-	//qDebug() << "Name is " << name;
 
 	if(name.isEmpty() == false) {
 		dir.mkdir(name);
@@ -69,10 +62,6 @@ void VlcEncodingSystem::_DoEncode(const QString &paramFile)
 		if(params.open(QIODevice::ReadWrite)) {
 			QByteArray paramData = params.readAll();
 			params.close();
-
-			//qDebug() << "ParamData: " << paramData;
-			//paramData.replace("\\\"", "\"");
-			//qDebug() << "ParamData: " << paramData;
 
 			bool ok;
 			QJson::Parser	parser;
