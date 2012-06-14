@@ -60,14 +60,14 @@ void VlcEncodingSystem::_DoEncode(const QString &paramFile)
 		QFile		params(dir.path() + "/params.txt");
 
 		if(params.open(QIODevice::ReadWrite)) {
-			QByteArray paramData = params.readAll();
+			QString paramData = params.readAll();
 			params.close();
 
 			bool ok;
 			QJson::Parser	parser;
-			QVariantMap		map = parser.parse(paramData, &ok).toMap();
+			QVariantMap		map = parser.parse(paramData.toAscii(), &ok).toMap();
 			if(ok && script.open(QIODevice::WriteOnly)) {
-				QByteArray	scriptData;
+				QString	scriptData;
 				//#!/bin/bash 
 				//vlc -I dummy --ignore-config "/home/paulm/Videos/troops.avi" 
 				//		'--sout=#transcode{vcodec=h264,soverlay,acodec=mp3,channels=2,venc=x264{profile=baseline,level=2.2,keyint=30,bframes=0,ref=1,nocabac},width=480,vb=200,ab=40,fps=25,deinterlace}:
@@ -76,10 +76,10 @@ void VlcEncodingSystem::_DoEncode(const QString &paramFile)
 				//				dst="/home/paulm/.Hobbyist_Software/VLC_Streamer/Root/troops/stream-###.ts"}'
 				//		vlc://quit
 				scriptData = "#!/bin/bash\n";
-				QByteArray	temp = map.value("sout").toByteArray();
-				temp.replace("##dest##", dir.path().toAscii());
-				scriptData += "vlc -I dummy --ignore-config " + map.value("args").toByteArray() + " \"" + map.value("file").toByteArray() + "\" vlc://quit " + "'" + temp + "' -vvv\n";
-				script.write(scriptData);
+				QString	temp = map.value("sout").toString();
+				temp.replace("##dest##", dir.path());
+				scriptData += "vlc -I dummy --ignore-config " + map.value("args").toString() + " \"" + map.value("file").toString() + "\" vlc://quit " + "'" + temp + "' -vvv\n";
+				script.write(scriptData.toAscii());
 				script.close();
 				script.setPermissions(QFile::ReadUser | QFile::WriteUser | QFile::ExeUser);
 
