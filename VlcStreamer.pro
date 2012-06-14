@@ -8,6 +8,7 @@ HEADERS += VlcEncoder.h \
            VlcEncodingSystem.h \
            VlcStreamerApp.h \
            VlcStreamerConnection.h \
+		   VlcStreamerFileSystem.h \
            VlcStreamerServer.h \
 
 SOURCES += main.cpp \
@@ -15,6 +16,7 @@ SOURCES += main.cpp \
            VlcEncodingSystem.cpp \
            VlcStreamerApp.cpp \
            VlcStreamerConnection.cpp \
+		   VlcStreamerFileSystem.cpp \
            VlcStreamerServer.cpp \
 
 LIBS += -lqjson
