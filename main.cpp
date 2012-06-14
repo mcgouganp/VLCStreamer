@@ -1,5 +1,6 @@
 #include <QCoreApplication>
 #include <QSocketNotifier>
+#include <signal.h>
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <unistd.h>
