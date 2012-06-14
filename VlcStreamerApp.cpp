@@ -4,6 +4,7 @@
 #include <QHostInfo>
 #include <QSettings>
 #include "VlcEncodingSystem.h"
+#include "VlcStreamerServer.h"
 
 
 VlcStreamerApp::VlcStreamerApp(QObject *parent) : QObject(parent)
@@ -54,6 +55,7 @@ bool VlcStreamerApp::Setup()
 
 	new VlcEncodingSystem(this);
 	new VlcStreamerServer(_listenPort, this);
+	_fs = new VlcStreamerFileSystem(this);
 
 	QStringList args;
 	args << "-s" << QHostInfo::localHostName() << "_hs-vlcstream._tcp" << QString::number(_listenPort) << ("http=" + QString::number(_listenPort)) << "version=3" << "minVersion=1" << "platform=unix";

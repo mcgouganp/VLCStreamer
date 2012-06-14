@@ -2,7 +2,7 @@
 #define _VlcStreamerApp_h
 
 #include <QProcess>
-#include "VlcStreamerServer.h"
+#include "VlcStreamerFileSystem.h"
 
 class VlcStreamerApp : public QObject {
 Q_OBJECT
@@ -17,6 +17,7 @@ public:
 	QString	DrivesDir() const		{ return _drivesDir; }
 	QString	DocumentRoot() const	{ return _documentRoot; }
 	QString	QueueDir() const		{ return _queueDir; }
+	VlcStreamerFileSystem &Movies()	{ return *_fs; }
 
 public slots:
 	void	Stop();
@@ -28,12 +29,13 @@ private:
 
 	static VlcStreamerApp	*_instance;
 
-	unsigned	_listenPort;
-	QString		_documentRoot;
-	QString		_queueDir;
-	QString		_homeDir;
-	QString		_drivesDir;
-	QProcess	*_mdns;
+	unsigned				_listenPort;
+	QString					_documentRoot;
+	QString					_queueDir;
+	QString					_homeDir;
+	QString					_drivesDir;
+	QProcess				*_mdns;
+	VlcStreamerFileSystem	*_fs;
 };
 
 #endif	// _VlcStreamerApp_h
