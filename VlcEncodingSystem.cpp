@@ -55,7 +55,11 @@ void VlcEncodingSystem::_DoEncode(const QString &paramFile)
 		dir.cd(name);
 		dir.rename(paramFile, "params.txt");
 
+#ifdef Q_WS_WIN
+		QFileInfo	scriptInfo(dir.path() + "/encode.bat");
+#else
 		QFileInfo	scriptInfo(dir.path() + "/encode.sh");
+#endif
 		QFile		script(scriptInfo.filePath());
 		QFile		params(dir.path() + "/params.txt");
 
