@@ -19,12 +19,6 @@ VlcStreamerConnection::VlcStreamerConnection(QObject *parent) : QTcpSocket(paren
 }
 
 
-VlcStreamerConnection::~VlcStreamerConnection()
-{
-}
-
-
-
 // ---------------------------------------------------
 
 
@@ -87,9 +81,9 @@ void VlcStreamerConnection::_Respond()
 			if(command == "movies") {
 				response.Data(VlcStreamerApp::Instance()->Movies().ConvertedVideoInfo().toAscii());
 			} else if(command == "create") {
-				QDir		dir(VlcStreamerApp::Instance()->DocumentRoot());
+				QDir		dir(VlcStreamerApp::Instance()->TempDir());
 				QFileInfo	src(queryItems.value("file"));
-				QFile		params(dir.path() + "/_Queue/" + src.fileName() + ".params.txt");
+				QFile		params(dir.path() + "/" + src.fileName() + ".params.txt");
 				if(params.open(QIODevice::WriteOnly)) {
 					QVariantMap	paramInfo;
 					QHashIterator<QString, QString>	iter(queryItems);
@@ -98,14 +92,15 @@ void VlcStreamerConnection::_Respond()
 						QString	name, value;
 						name = iter.key();
 						value = iter.value();
-						paramInfo.insert(name.replace("\"", "\\\""), value.replace("\"", "\\\""));
+						qDebug() << "Got name" << name << "and value" << value;
+						paramInfo.insert(name, value);
 					}
 					paramInfo.insert("serverid", VlcStreamerApp::Instance()->Movies().MakeServerId());
 					QJson::Serializer	serializer;
 					data = serializer.serialize(paramInfo);
-
 					params.write(data);
 					params.close();
+					params.rename(VlcStreamerApp::Instance()->QueueDir() + "/" + src.fileName() + ".params.txt");
 				} else {
 					qDebug() << "Couldn't open params file for writing" << params.fileName();
 				}
