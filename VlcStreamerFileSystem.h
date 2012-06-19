@@ -4,6 +4,7 @@
 #include <QObject>
 #include <QDir>
 #include <QHash>
+#include <QVariant>
 
 class VlcStreamerFileSystem : public QObject {
 	Q_OBJECT
@@ -19,14 +20,12 @@ public slots:
 
 protected:
 	struct _ConvertedVideoInfo {
-		QString	params;
-		QString	status;
-		QString	serverId;
+		QVariantMap	params;
+		QString		status;
+		QString		serverId;
 	};
 
 	QHash<QString, _ConvertedVideoInfo>	_cache;
-
-	static void	_DeleteDirectory(QDir &dir);
 
 	bool	_GetDirectoryInfo(const QDir &dir, _ConvertedVideoInfo &info);
 };
