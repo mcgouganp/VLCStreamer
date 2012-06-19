@@ -10,7 +10,6 @@ class VlcStreamerConnection : public QTcpSocket {
 	Q_OBJECT
 public:
 	VlcStreamerConnection(QObject *parent);
-	virtual ~VlcStreamerConnection();
 
 private slots:
 	void	_RecvTimeout();
