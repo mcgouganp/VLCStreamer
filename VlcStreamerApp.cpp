@@ -3,6 +3,7 @@
 #include <QDir>
 #include <QHostInfo>
 #include <QSettings>
+#include "Utils.h"
 #include "VlcEncodingSystem.h"
 #include "VlcStreamerServer.h"
 
@@ -47,11 +48,20 @@ bool VlcStreamerApp::Setup()
 		return false;
 	}
 	dir.cd(RootString);
+	_documentRoot = dir.path();
 	if(dir.exists(QueueString) == false && dir.mkdir(QueueString) == false) {
 		return false;
 	}
-	_documentRoot = dir.path();
-	_queueDir = _documentRoot + "/" + QueueString;
+	dir.cd(QueueString);
+	_queueDir = dir.path();
+
+	QDir	temp(QDir::temp());
+
+	if(temp.exists(appInstance->applicationName()) == false && temp.mkdir(appInstance->applicationName()) == false) {
+		return false;
+	}
+	temp.cd(appInstance->applicationName());
+	_tempDir = temp.path();
 
 	new VlcEncodingSystem(this);
 	new VlcStreamerServer(_listenPort, this);
@@ -71,6 +81,9 @@ void VlcStreamerApp::Stop()
 	qDebug() << "Terminating MDNS";
 	_mdns->terminate();
 	_mdns->waitForFinished();
+
+	QDir	temp(_tempDir);
+	DeleteDirectory(temp);
 }
 
 

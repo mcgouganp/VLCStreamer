@@ -17,6 +17,7 @@ public:
 	QString	DrivesDir() const		{ return _drivesDir; }
 	QString	DocumentRoot() const	{ return _documentRoot; }
 	QString	QueueDir() const		{ return _queueDir; }
+	QString	TempDir() const			{ return _tempDir; }
 	VlcStreamerFileSystem &Movies()	{ return *_fs; }
 
 public slots:
@@ -34,6 +35,7 @@ private:
 	QString					_queueDir;
 	QString					_homeDir;
 	QString					_drivesDir;
+	QString					_tempDir;
 	QProcess				*_mdns;
 	VlcStreamerFileSystem	*_fs;
 };
