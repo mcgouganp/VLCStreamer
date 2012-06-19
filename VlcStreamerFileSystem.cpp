@@ -4,28 +4,30 @@
 #include <QFileSystemWatcher>
 #include <qjson/parser.h>
 #include <qjson/serializer.h>
+#include "Utils.h"
 #include "VlcStreamerApp.h"
 
 
 VlcStreamerFileSystem::VlcStreamerFileSystem(QObject *parent) : QObject(parent)
 {
 	QDir	dir(VlcStreamerApp::Instance()->DocumentRoot());
+	QDir	queue(VlcStreamerApp::Instance()->QueueDir());
 
 	QStringList	list = dir.entryList(QDir::Dirs | QDir::Readable | QDir::NoDotAndDotDot);
+	list.removeAll(queue.dirName());
 	for(unsigned i = 0; i != (unsigned) list.size(); ++i) {
-		bool	ok;
-		ok = false;
 		if(dir.cd(list.at(i))) {
 			_ConvertedVideoInfo	info;
 			if(_GetDirectoryInfo(dir, info)) {
 				_cache.insert(dir.dirName(), info);
-				ok = true;
+				dir.cdUp();
+			} else {
+				qDebug() << "Directory " << list.at(i) << "corrupt on startup, deleting";
+				DeleteDirectory(dir);
+				// This implicitly returns us up a dir level when deleting the current dir
 			}
-			dir.cdUp();
-		}
-		if(ok == false) {
-			qDebug() << "Directory " << list.at(i) << "corrupt on startup, deleting";
-			_DeleteDirectory(dir);
+		} else {
+			qDebug() << "Unable to see in directory" << (dir.path() + list.at(i));
 		}
 	}
 
@@ -74,9 +76,9 @@ void VlcStreamerFileSystem::DeleteMovie(const QString &serverId)
 {
 	for(QHash<QString, _ConvertedVideoInfo>::const_iterator	iter = _cache.constBegin(); iter != _cache.constEnd(); ++iter) {
 		if(serverId == iter.value().serverId) {
-			QDir	dir(iter.key());
-			_DeleteDirectory(dir);
+			QDir	dir(VlcStreamerApp::Instance()->DocumentRoot() + "/" + iter.key());
 			_cache.remove(dir.dirName());
+			DeleteDirectory(dir);
 			break;
 		}
 	}
@@ -86,9 +88,11 @@ void VlcStreamerFileSystem::DeleteMovie(const QString &serverId)
 void VlcStreamerFileSystem::OnDirChange(const QString &arg)
 {
 	QDir	dir(arg);
+	QDir	queue(VlcStreamerApp::Instance()->QueueDir());
 
 	if(arg == VlcStreamerApp::Instance()->DocumentRoot()) {
 		QStringList	list = dir.entryList(QDir::Dirs | QDir::Readable | QDir::NoDotAndDotDot);
+		list.removeAll(queue.dirName());
 		QSet<QString>	found = QSet<QString>::fromList(dir.entryList(QDir::Dirs | QDir::Readable | QDir::NoDotAndDotDot));
 		QSet<QString>	cached = QSet<QString>::fromList(_cache.keys());
 
@@ -118,35 +122,19 @@ void VlcStreamerFileSystem::OnDirChange(const QString &arg)
 // -------------------------------------------------------------------
 
 
-void VlcStreamerFileSystem::_DeleteDirectory(QDir &dir)
-{
-	QFileInfoList	files = dir.entryInfoList(QDir::Files | QDir::NoDotAndDotDot);
-	for(unsigned i = 0; i != (unsigned) files.size(); ++i) {
-		dir.remove(files.at(i).fileName());
-	}
-	QFileInfoList	subdirs = dir.entryInfoList(QDir::Dirs | QDir::NoDotAndDotDot);
-	for(unsigned i = 0; i != (unsigned) subdirs.size(); ++i) {
-		dir.cd(subdirs.at(i).fileName());
-		_DeleteDirectory(dir);
-	}
-	QString current = dir.dirName();
-	dir.cdUp();
-	dir.rmdir(current);
-}
-
-
 bool VlcStreamerFileSystem::_GetDirectoryInfo(const QDir &dir, _ConvertedVideoInfo &info)
 {
 	QJson::Parser	parser;
 	QFile			params(dir.filePath("params.txt"));
+	QString			paramText;
 
 	if(params.open(QIODevice::ReadOnly)) {
-		info.params = params.readAll();
+		paramText = params.readAll();
 		params.close();
 		bool	ok;
-		QVariantMap		result = parser.parse(info.params.toAscii(), &ok).toMap();
+		info.params = parser.parse(paramText.toAscii(), &ok).toMap();
 		if(ok) {
-			info.serverId = result["serverid"].toString();
+			info.serverId = info.params["serverid"].toString();
 			info.status = "not processed";
 			if(dir.exists("complete.txt")) {
 				info.status = "complete";
