@@ -21,9 +21,20 @@ VlcStreamerApp::VlcStreamerApp(QObject *parent) : QObject(parent)
 
 	QSettings	settings;
 
-	_homeDir = settings.value("home", QDir::homePath() + "/Videos").toString();
-	_drivesDir = settings.value("drives", "/media").toString();
-	_listenPort = settings.value("port", 8124).toUInt();
+	if(settings.contains("home") == false) {
+		settings.setValue("home", QDir::homePath() + "/Videos");
+	}
+	if(settings.contains("drives") == false) {
+		settings.setValue("drives", "/media");
+	}
+	if(settings.contains("port") == false) {
+		settings.setValue("port", 8124);
+	}
+	settings.sync();
+
+	_homeDir = settings.value("home").toString();
+	_drivesDir = settings.value("drives").toString();
+	_listenPort = settings.value("port").toUInt();
 
 }
 
