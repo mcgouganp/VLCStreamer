@@ -35,6 +35,7 @@ private:
 	QString					_queueDir;
 	QString					_homeDir;
 	QString					_drivesDir;
+	QString					_storeDir;
 	QString					_tempDir;
 	QProcess				*_mdns;
 	VlcStreamerFileSystem	*_fs;

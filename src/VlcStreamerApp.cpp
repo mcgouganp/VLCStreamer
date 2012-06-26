@@ -30,12 +30,15 @@ VlcStreamerApp::VlcStreamerApp(QObject *parent) : QObject(parent)
 	if(settings.contains("port") == false) {
 		settings.setValue("port", 8124);
 	}
+	if(settings.contains("store") == false) {
+		settings.setValue("store", QDir::homePath());
+	}
 	settings.sync();
 
 	_homeDir = settings.value("home").toString();
 	_drivesDir = settings.value("drives").toString();
 	_listenPort = settings.value("port").toUInt();
-
+	_storeDir = settings.value("store").toString();
 }
 
 
@@ -45,7 +48,7 @@ bool VlcStreamerApp::Setup()
 	static const QString	QueueString = "_Queue";
 
 	QCoreApplication	*appInstance = QCoreApplication::instance();
-	QDir				dir(QDir::home());
+	QDir				dir(_storeDir);
 
 	if(dir.exists("." + appInstance->organizationName()) == false && dir.mkdir("." + appInstance->organizationName()) == false) {
 		return false;
