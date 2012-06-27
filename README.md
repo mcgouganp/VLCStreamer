@@ -1,7 +1,7 @@
 VLCStreamer
 ===========
 
-This is a QT-based server for the VLCStreamerClient. It runs as a daemon process (i.e. no GUI). It is written using the QT framework. Since it is QT-based, there has been some thought given to making it multiplatform compatible, however it is primarily targetted to Linux installations.
+This is a QT-based server for the VLCStreamerClient. It runs as a daemon process (i.e. no GUI). It is written using the QT framework. Since it is QT-based, there has been some thought given to making it multiplatform compatible, however it is primarily targeted to Linux installations.
 
 
 Prerequisites
@@ -17,23 +17,31 @@ To run the software you will require the following software to be installed and 
 Compiling
 ---------
 To build you should follows steps like this:
+```bash
 qmake
 make
 make install
+```
 
 If you want to install from a RPM to allow software package management of this software you can instead run:
+```bash
 rpmbuild -ta vlcstreamer.tar.gz
+```
+
 As this package includes a SPEC file, this will build a binary RPM that can be used to install the software instead.
 
 
 Installing
 ----------
+To install from the source package perform the "make install" step when compiling.
 
 
 Running
 -------
 This is written as a service, so by default it is not executed in the foreground. To override this and run in the foreground use:
-    vlcstreamer -e
+```bash
+vlcstreamer -e
+```
 
 
 Configuring
