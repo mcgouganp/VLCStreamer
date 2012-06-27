@@ -44,3 +44,11 @@ It is a simple "key=value" format. The currently supported keys are:
 * home - The directory mapped to VlcStreamer's "home" request
 * media - The directory mapped to VlcStreamer's "media" request
 * store - The directory that the program's filesystem, which contains transcoded data/log files, is rooted on.
+
+
+Licensing
+---------
+Copyright (C) 2012 Paul McGougan
+
+Distributed under the GNU General Public License 2.0. (See acommpanying file
+LICENSE or copy at http://www.gnu.org/licenses/).
